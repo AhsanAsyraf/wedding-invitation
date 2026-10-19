@@ -3,10 +3,6 @@
   --cream: #f5eee2;
   --green: #3d4b25;
   --art-max: 620px;
-  /* Artwork width on screen: full phone width, capped on large screens. */
-  --art-w: min(100vw, var(--art-max));
-  /* Length of the soft cross-fade where one slide melts into the next. */
-  --seam: calc(var(--art-w) * 0.045);
 }
 
 * {
@@ -27,50 +23,61 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* One slide = exactly one phone screen. Snap scrolling lands on a single page
+   per swipe, so the next page never peeks in at the bottom. */
+html {
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: none;
+}
+
 .invitation {
   display: block;
   width: 100%;
-  max-width: var(--art-max);
-  margin: 0 auto;
-  /* Respect the notch / home bar without adding cream bands between slides. */
-  padding: 0;
-}
-
-/* Plain block flow: no flex, no fixed heights, nothing that can add space
-   between slides. Each slide's height comes only from its artwork ratio. */
-.page {
-  display: block;
-  position: relative;
-  width: 100%;
   margin: 0;
   padding: 0;
-  --fade-top: 0px;
-  --fade-bottom: 0px;
 }
 
-/* Slides overlap by exactly one seam so the faded edges cross-dissolve. */
-.page + .page {
-  margin-top: calc(-1 * var(--seam));
-  --fade-top: var(--seam);
+.page {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100vh;   /* fallback */
+  height: 100dvh;  /* tracks the visible screen on phones */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--cream);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
-.page:not(:last-child) {
-  --fade-bottom: var(--seam);
+/* Where the screen is taller or wider than the artwork, fill the leftover
+   space with a blurred copy of the same slide instead of a flat cream band. */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: 0;
+  background: var(--art) center / cover no-repeat;
+  filter: blur(22px) saturate(1.05);
+  transform: scale(1.08);
 }
 
-/* Height via padding (496 x 700 artwork = 141.129%). This is the most
-   reliable way to reserve exact space on iOS Safari, and the percentage
-   positions used by the countdown and map links still work inside it. */
+/* The artwork is always shown whole (never cropped), scaled to fit the screen
+   in both directions: limited by screen width, screen height or 620px. */
 .artboard {
   position: relative;
+  z-index: 1;
   display: block;
-  width: 100%;
+  width: min(100vw, calc(100vh * 496 / 700), var(--art-max));
+  width: min(100vw, calc(100dvh * 496 / 700), var(--art-max));
   height: 0;
   padding-bottom: 141.129%;
   overflow: hidden;
   isolation: isolate;
   container-type: inline-size;
-  background: var(--cream);
+  background: transparent;
 }
 
 .full-art {
@@ -81,8 +88,9 @@ body {
   width: 100%;
   height: 100%;
   object-fit: fill;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
+  /* Feather the top and bottom edges into the blurred backdrop. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 2.5%, #000 97.5%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 2.5%, #000 97.5%, transparent 100%);
 }
 
 /* Live countdown overlay for slide 4. Coordinates are relative to the artwork. */
