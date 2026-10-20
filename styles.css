@@ -1,8 +1,10 @@
 :root {
   color-scheme: light;
-  --cream: #f5eee2;
+  --cream: #f1e7da;
   --green: #3d4b25;
-  --art-max: 620px;
+  /* New artwork is 1080 x 2340 (9:19.5), the same shape as a modern phone. */
+  --art-ratio: 1080 / 2340;
+  --art-w-per-h: 0.461538; /* 1080 / 2340 */
 }
 
 * {
@@ -13,6 +15,9 @@ html {
   margin: 0;
   background: var(--cream);
   -webkit-text-size-adjust: 100%;
+  /* One swipe = exactly one page. */
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -23,13 +28,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* One slide = exactly one phone screen. Snap scrolling lands on a single page
-   per swipe, so the next page never peeks in at the bottom. */
-html {
-  scroll-snap-type: y mandatory;
-  overscroll-behavior-y: none;
-}
-
 .invitation {
   display: block;
   width: 100%;
@@ -37,13 +35,12 @@ html {
   padding: 0;
 }
 
+/* Each page is exactly the visible screen. */
 .page {
   position: relative;
-  display: grid;
-  place-items: center;
   width: 100%;
   height: 100vh;   /* fallback */
-  height: 100dvh;  /* tracks the visible screen on phones */
+  height: 100dvh;  /* visible screen height on phones */
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -52,64 +49,61 @@ html {
   scroll-snap-stop: always;
 }
 
-/* Where the screen is taller or wider than the artwork, fill the leftover
-   space with a blurred copy of the same slide instead of a flat cream band. */
-.page::before {
-  content: "";
-  position: absolute;
-  inset: -8%;
-  z-index: 0;
-  background: var(--art) center / cover no-repeat;
-  filter: blur(22px) saturate(1.05);
-  transform: scale(1.08);
-}
-
-/* The artwork is always shown whole (never cropped), scaled to fit the screen
-   in both directions: limited by screen width, screen height or 620px. */
+/* Phones and portrait screens: the artwork fills the whole screen edge to edge
+   (like a wallpaper). It is scaled just enough to cover the screen, so the
+   only thing that can ever be trimmed is a few pixels at the edges. */
 .artboard {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: min(100vw, calc(100vh * 496 / 700), var(--art-max));
-  width: min(100vw, calc(100dvh * 496 / 700), var(--art-max));
-  height: 0;
-  padding-bottom: 141.129%;
-  overflow: hidden;
-  isolation: isolate;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100vw, calc(100vh * var(--art-w-per-h)));
+  width: max(100vw, calc(100dvh * var(--art-w-per-h)));
+  aspect-ratio: var(--art-ratio);
   container-type: inline-size;
-  background: transparent;
 }
 
 .full-art {
   position: absolute;
-  z-index: 0;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: fill;
-  /* Feather the top and bottom edges into the blurred backdrop. */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 2.5%, #000 97.5%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 2.5%, #000 97.5%, transparent 100%);
 }
 
-/* Live countdown overlay for slide 4. Coordinates are relative to the artwork. */
-.details-page {
-  background: #e4ddcc;
+/* Desktops, tablets and landscape: show the whole page, centered, with the
+   same artwork softly extended behind it on the sides. */
+@media (min-aspect-ratio: 5/8) {
+  .page::before {
+    content: "";
+    position: absolute;
+    inset: -5%;
+    background: var(--art) center / cover no-repeat;
+    filter: blur(28px);
+    transform: scale(1.1);
+  }
+
+  .artboard {
+    width: calc(100vh * var(--art-w-per-h));
+    width: calc(100dvh * var(--art-w-per-h));
+    box-shadow: 0 0 60px rgba(60, 45, 30, 0.18);
+  }
 }
 
+/* Live countdown overlay for slide 4 (positions are % of the artwork,
+   placed on the water just under "menghitung hari"). */
 .countdown {
   position: absolute;
   z-index: 1;
-  top: 72.8%;
-  left: 19%;
+  top: 64.9%;
+  left: 15%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  width: 62%;
-  height: 8.2%;
-  color: #181c13;
+  width: 70%;
+  color: #2c3320;
   text-align: center;
   pointer-events: none;
 }
@@ -120,7 +114,7 @@ html {
   align-items: center;
   width: 100%;
   white-space: nowrap;
-  font: 700 6.1cqw/1.05 Georgia, "Times New Roman", serif;
+  font: 700 7.4cqw/1.05 Georgia, "Times New Roman", serif;
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
@@ -132,57 +126,43 @@ html {
 
 .countdown-values b {
   margin: 0 -0.3%;
-  font: 500 3.5cqw/1 Georgia, "Times New Roman", serif;
+  font: 500 4.2cqw/1 Georgia, "Times New Roman", serif;
 }
 
 .countdown-labels {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  margin-top: 1.2%;
-  color: rgba(49, 56, 39, 0.72);
-  font: 500 2.7cqw/1 "Dancing Script", cursive;
+  margin-top: 1.6cqw;
+  color: rgba(49, 56, 39, 0.8);
+  font: 500 3.6cqw/1 "Dancing Script", cursive;
 }
 
-/* Invisible but accessible tap targets over the map logos in slide 4. */
+/* Invisible tap targets over the Google Maps and Waze icons in slide 4. */
 .map-hotspot {
   position: absolute;
   z-index: 2;
-  top: 54.1%;
+  top: 46.2%;
   display: block;
-  width: 8.1%;
-  height: 5.7%;
-  border-radius: 5px;
+  width: 7.4%;
+  height: 3.42%;
+  border-radius: 8px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 .google-maps {
-  left: 42%;
+  left: 42.2%;
 }
 
 .waze {
-  left: 50.2%;
+  left: 49.7%;
 }
 
 .map-hotspot:focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 1px;
   background: rgba(255, 255, 255, 0.25);
-}
-
-@media (max-width: 360px) {
-  .countdown-values {
-    font-size: 5.9cqw;
-  }
-
-  .countdown-values b {
-    font-size: 3.3cqw;
-  }
-
-  .countdown-labels {
-    font-size: 2.5cqw;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
