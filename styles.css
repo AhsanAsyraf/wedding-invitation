@@ -2,63 +2,71 @@
   color-scheme: light;
   --cream: #f1e7da;
   --green: #3d4b25;
-  /* New artwork is 1080 x 2340 (9:19.5), the same shape as a modern phone. */
   --art-ratio: 1080 / 2340;
-  --art-w-per-h: 0.461538; /* 1080 / 2340 */
+  --art-w-per-h: 0.461538;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html {
+html,
+body {
+  width: 100%;
+  height: 100%;
   margin: 0;
   background: var(--cream);
   -webkit-text-size-adjust: 100%;
-  /* One swipe = exactly one page. */
-  scroll-snap-type: y mandatory;
-  overscroll-behavior-y: none;
 }
 
 body {
-  margin: 0;
   min-width: 0;
-  background: var(--cream);
-  overflow-x: hidden;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+  Use a screen-edge-pinned scroll container instead of 100dvh.
+  This avoids relying on Safari's sometimes inconsistent dynamic viewport height.
+*/
 .invitation {
+  position: fixed;
+  inset: 0;
   display: block;
-  width: 100%;
+  width: auto;
+  height: auto;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+  scroll-snap-type: y mandatory;
+  background: var(--cream);
 }
 
-/* Each page is exactly the visible screen. */
+/* Every page fills the pinned container's scrollport. */
 .page {
   position: relative;
   width: 100%;
-  height: 100vh;   /* fallback */
-  height: 100dvh;  /* visible screen height on phones */
+  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
   background: var(--cream);
   scroll-snap-align: start;
   scroll-snap-stop: always;
+  container-type: size;
 }
 
-/* Phones and portrait screens: the artwork fills the whole screen edge to edge
-   (like a wallpaper). It is scaled just enough to cover the screen, so the
-   only thing that can ever be trimmed is a few pixels at the edges. */
+/* Portrait: fill the page edge-to-edge, cropping only where needed. */
 .artboard {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: max(100vw, calc(100vh * var(--art-w-per-h)));
-  width: max(100vw, calc(100dvh * var(--art-w-per-h)));
+  width: max(100cqw, calc(100cqh * var(--art-w-per-h)));
   aspect-ratio: var(--art-ratio);
   container-type: inline-size;
 }
@@ -72,8 +80,7 @@ body {
   object-fit: fill;
 }
 
-/* Desktops, tablets and landscape: show the whole page, centered, with the
-   same artwork softly extended behind it on the sides. */
+/* Wider screens: show the complete artwork with a soft matching backdrop. */
 @media (min-aspect-ratio: 5/8) {
   .page::before {
     content: "";
@@ -85,14 +92,12 @@ body {
   }
 
   .artboard {
-    width: calc(100vh * var(--art-w-per-h));
-    width: calc(100dvh * var(--art-w-per-h));
+    width: calc(100cqh * var(--art-w-per-h));
     box-shadow: 0 0 60px rgba(60, 45, 30, 0.18);
   }
 }
 
-/* Live countdown overlay for slide 4 (positions are % of the artwork,
-   placed on the water just under "menghitung hari"). */
+/* Countdown overlay on slide 4. */
 .countdown {
   position: absolute;
   z-index: 1;
@@ -138,7 +143,7 @@ body {
   font: 500 3.6cqw/1 "Dancing Script", cursive;
 }
 
-/* Invisible tap targets over the Google Maps and Waze icons in slide 4. */
+/* Invisible tap targets over the Google Maps and Waze icons on slide 4. */
 .map-hotspot {
   position: absolute;
   z-index: 2;
@@ -166,7 +171,7 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  html {
+  .invitation {
     scroll-behavior: smooth;
   }
 }
